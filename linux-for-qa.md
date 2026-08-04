@@ -1,6 +1,6 @@
 📘 Linux for QA Engineers: A Beginner-Friendly Guide to the Command Line
 
-Author: Tatsiana Chakhovich Role: QA Engineer, CaringBridge
+Author: Tatsiana Chakhovich Role: QA Automation Engineer
 
 📌 Overview
 
