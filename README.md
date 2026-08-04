@@ -1,4 +1,6 @@
-📄 DOI: https://doi.org/10.5281/zenodo.20360040
+📄 DOI: 
+https://doi.org/10.5281/zenodo.20360040
+https://doi.org/10.5281/zenodo.21784502
 
 Author: Tatsiana Chakhovich — QA Automation Engineer
 
@@ -25,7 +27,8 @@ Search Validation (OpenSearch) — testing and validating search relevance and i
 
 If you use this work, please cite:
 
-Chakhovich, T. (2026). QA Git Workflow (v1.0). Zenodo. https://doi.org/10.5281/zenodo.20360040
+TatsianaChakhovich. (2026). TatsianaChakhovich/qa-automation: GIT QA Workflow v1.0 (Version v1.0) [Computer software]. Zenodo. https://doi.org/10.5281/zenodo.20360040
+TatsianaChakhovich. (2026). TatsianaChakhovich/qa-automation-articles: Linux For QA v.1.1 (Version v1.1) [Computer software]. Zenodo. https://doi.org/10.5281/zenodo.21784502
 
 
 👤 About the Author
