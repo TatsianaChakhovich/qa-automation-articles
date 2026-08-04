@@ -1,8 +1,8 @@
 📄 DOI: 
 
-https://doi.org/10.5281/zenodo.20360040
+https://doi.org/10.5281/zenodo.20360057
 
-https://doi.org/10.5281/zenodo.21784502
+https://doi.org/10.5281/zenodo.21785690
 
 
 Author: Tatsiana Chakhovich — QA Automation Engineer
@@ -30,9 +30,9 @@ Search Validation (OpenSearch) — testing and validating search relevance and i
 
 If you use this work, please cite:
 
-TatsianaChakhovich. (2026). TatsianaChakhovich/qa-automation: GIT QA Workflow v1.0 (Version v1.0) [Computer software]. Zenodo. https://doi.org/10.5281/zenodo.20360040
+Chakhovich, T. (2026). Git-Driven Workflow Practices for QA Automation Engineers in CI/CD Systems (Version 1.0). Zenodo. https://doi.org/10.5281/zenodo.20360057
 
-TatsianaChakhovich. (2026). TatsianaChakhovich/qa-automation-articles: Linux For QA v.1.1 (Version v1.1) [Computer software]. Zenodo. https://doi.org/10.5281/zenodo.21784502
+Chakhovich, T. (2026). Linux for QA Engineers: A Beginner-Friendly Guide to the Command Line (Version 1.1). Zenodo. https://doi.org/10.5281/zenodo.21785690
 
 
 👤 About the Author
