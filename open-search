@@ -1,0 +1,71 @@
+Testing Name Search with OpenSearch: QA Approach
+Author: Tatsiana Chakhovich Role: QA Automation Engineer
+
+
+Why Search Needed Its Own Test Strategy
+Search is deceptively easy to get wrong in ways that never show up as an obvious bug. The application doesn’t crash, no error is thrown — a query just quietly returns the wrong results, or misses the one result a user actually needed. On a healthcare platform, where people search by name to find a specific patient’s or family’s page among many, that kind of silent failure isn’t a minor inconvenience — it’s the difference between someone finding the page they’re looking for during a difficult time, or giving up. That’s exactly the kind of risk worth building dedicated test coverage for, separate from general functional or UI testing.
+As an example throughout this piece, imagine a healthcare platform where every user has a page identified primarily by a first and last name, and search needs to reliably find that page — typos, apostrophes, multi-word names, and all.
+The approach here treats search as its own testable surface: synthetic data goes in, known queries go against it, and the results are checked against exact, predictable expectations — not just “did it return something.”
+Building Reliable, Repeatable Test Data
+Rather than testing against real production content (which is inconsistent, changes over time, and — especially on a healthcare platform — should never be used for testing in the first place), the framework generates synthetic test datasets: made-up records with predictable, known values, standing in for real user pages.
+This test data is stored as CSV files in an S3 bucket. CSV turned out to be a genuinely useful format for this: anyone on the team can open, review, or extend it in a spreadsheet without needing to hand-write JSON or touch test code. At test time, the framework pulls the relevant CSV file down from S3, and a small conversion step normalizes each row into the same document structure the JSON test data uses — so both formats feed the same indexing pipeline.
+Example test data (fully synthetic, non-sensitive)
+A CSV row might look like this:
+idfirstNamelastNameisRemovedisPubliclyVisiblecreatedAttest-0001JaneDoefalsetrue2026–01–05test-0002JohnO’Brienfalsetrue2026–02–11test-0003MichaelSmithfalsetrue2026–03–02test-0004ElenaPetrovatruetrue2025–11–20test-0005RobertNguyenfalsefalse2026–01–30
+None of this is real data — every name and ID here is made up specifically for testing. The last two rows are deliberately included as negative-path examples: test-0004 is marked removed, and test-0005 is marked as not publicly visible, so a passing test suite must confirm neither ever shows up in search results, no matter how well their name matches a query.
+Each synthetic record is indexed with a deliberately unique, traceable identifier like test-0001 above, which matters for two reasons: it lets a test clean up exactly what it created (nothing else), and it lets a test search for and verify an exact expected match instead of just checking "results came back."
+Structuring Search Test Cases by Query Complexity
+Search bugs tend to surface differently depending on how many terms a query has, so test cases are organized by term count. Using the example data above:
+•	Single-term — searching "Jane" or "Doe" should return test-0001.
+•	Two-term — searching "John O'Brien" should return test-0002, and searching "John OBrien" (no apostrophe) should return the same result.
+•	Three-term / multi-term — a longer query like "Michael James Smith" needs to correctly interpret which part is a compound first name versus a compound last name.
+Each category has its own set of test cases, stored as structured CSV/JSON data files rather than hardcoded in the test code — which means adding a new scenario is a data change, not a code change.
+Test Scenarios That Actually Matter for Name Search
+Search-by-name looks simple from the outside, but real names break naive implementations in predictable ways — which means the test scenarios worth covering are the ones that mirror how people actually type. Continuing the example data above:
+•	Exact matches — searching "Jane Doe" returns test-0001.
+•	Fuzzy matching for typos — insertions, deletions, transpositions, and substitutions should still find the right result: searching "Micheal Smith" or "Smth" should still surface test-0003.
+•	Apostrophe normalization — searching "OBrien" or "O'Brien" should both return test-0002.
+•	Multi-word names — a query like "Robert Van Nguyen" needs to correctly handle whether the middle term belongs to the first or last name.
+•	Exclusion rules — no query should ever surface test-0004 (marked removed) or test-0005 (marked not publicly visible), even for an exact name match.
+•	Tie-breaking behavior — when multiple results score equivalently, ordering should fall back to a consistent, predictable rule (such as recency) rather than being arbitrary.
+Testing at this level — validating behavior against realistic name patterns — is deliberately kept separate from the underlying relevance-scoring implementation. The test suite doesn’t need to know or assert on the specific weighting logic a search engine uses internally; it just needs to confirm that, given a realistic query, the expected result comes back and the excluded content stays excluded. That separation is what makes the tests resilient — the ranking algorithm can be tuned and improved over time without breaking the test suite, as long as the observable behavior it’s supposed to guarantee still holds.
+Additional Test Cases, by Query Type
+Beyond the core scenarios above, a few more specific edge cases are worth deliberately writing test cases for — the kind that only surface once you think carefully about how real people type real names.
+Error! Filename not specified.
+Single-term queries
+•	Fuzzy matching follows the search engine’s standard edit-distance rule: a 1–2 character term requires an exact match, a 3–5 character term allows one edit (an insertion, deletion, transposition, or substitution), and a longer term allows two edits — with the first character always expected to match exactly. This is standard built-in fuzzy-matching behavior, not custom logic, but it’s still worth a test case per edit type using the example data from earlier — confirming "Michaeel" (an inserted letter) still finds test-0003 ("Michael"), "Smth" (a dropped letter) still finds it by last name ("Smith"), "Micahel" (two letters swapped) still matches, and "Smyth" (a substituted letter) still matches too.
+•	A single-term search should not silently expand into nickname synonyms — searching "Jack" shouldn't surface test-0002 just because "Jack" is a common nickname for "John." This is a deliberate product decision worth its own regression test, since a well-meaning "helpful" synonym feature could quietly get added later and change behavior unexpectedly.
+•	Last-name matches and first-name matches aren’t treated as equally likely — a single-term search should prioritize results where the term matches on the field it’s more distinctive for. A test case here doesn’t need to assert on how much weight is applied, just that the ordering reflects that priority.
+Two-term queries
+•	Short second terms are a deliberate edge case: searching "John O" (a full first name plus a single initial, aimed at test-0002) should only return exact matches on both parts — no fuzzy matching kicks in for a term that short, since there's not enough information to safely guess at intent.
+•	A two-term search should still find a reasonable match even when only one of the two terms matches exactly and the other is a near-miss — the test case here isn’t about the specific scoring tier, just confirming that a partial-but-close match doesn’t come back empty when a full exact match doesn’t exist.
+Three-term and longer queries
+•	Three-term names have two valid interpretations, and both need their own test case. Take a hypothetical name like “Sara Beth Whitfield”: one interpretation treats "Sara Beth" as the first name and "Whitfield" as the last name, while the other treats "Sara" as the first name and "Beth Whitfield" as the last name. A robust test suite checks that both interpretations can succeed, since the system can't know in advance which one is correct for a given name.
+•	For four or more terms, the practical test case is confirming the system still finds a match by reasonably narrowing down which terms it treats as the “important” ones (typically the first and last), rather than trying to exact-match an entire long string, which real names with middle names, suffixes, or multiple surnames would otherwise fail.
+Across all query types
+•	Certain filler words (like the platform’s own name, or connector words such as “or”) get stripped from a query before matching — but a test case should confirm that a query consisting only of a filler word isn’t stripped down to nothing, since that would silently turn a real (if unusual) search into an empty one.
+The Test Framework: Setup, Assertion, Teardown
+Each test run follows the same reliable pattern:
+1.	Setup — load the synthetic test data from the S3-stored CSV/JSON files, check whether matching test documents already exist in the index (leftover from a previous run), and delete them if so.
+2.	Index — bulk-index the fresh synthetic documents into the search index using their unique IDs.
+3.	Query — call the search API with a specific term (or terms) that should match one of the known synthetic records.
+4.	Assert — verify not just that results came back, but that an exact match for the expected record is present among them (and that excluded records, like the removed or non-visible rows, never appear).
+5.	Teardown — clean up the synthetic test documents so the index isn’t left polluted for the next run or for anyone else querying it.
+This setup/assert/teardown discipline is what makes the tests trustworthy to run repeatedly and in any order — a test never depends on leftover state from a previous run, and never leaves anything behind for the next one.
+Design Trade-offs Worth Knowing
+A few decisions in this approach are deliberate, not incidental:
+•	Behavior tests, not implementation tests. As covered above, the suite asserts on outcomes (the right result comes back, the wrong one is excluded) rather than on internal scoring details. This costs a little precision — a test can’t tell you why a result ranked where it did — but it buys resilience: the underlying ranking logic can be retuned or even swapped for a different engine entirely without rewriting the test suite.
+•	Synthetic data over sampled production data. It would be faster to grab a few real records and anonymize them, but anonymization is easy to get subtly wrong, and on a healthcare platform that risk isn’t worth the time saved. Fully synthetic data with obviously fake names removes the question entirely.
+•	CSV as the primary authoring format. JSON is more expressive, but the team members who most often need to add a new search test case aren’t necessarily the ones most comfortable writing JSON by hand. Optimizing for who actually edits the test data, not just for technical elegance, kept the test suite easier to maintain over time.
+What This Approach Catches
+This kind of testing is aimed squarely at regressions that are invisible anywhere else in the stack:
+•	A change to indexing logic that silently drops a field search relies on
+•	A relevance/ranking change that pushes an exact match out of the visible results
+•	Indexing delays or failures that mean newly created content doesn’t become searchable when it should
+•	Filtering logic (like permission or visibility rules) not being applied correctly to search results
+None of these would necessarily fail a unit test or show up in manual UI testing — they only surface when you actually index real-shaped data and query it the way a user would.
+Lessons Learned
+•	Never test search against production data. Synthetic, disposable test data with known expected outcomes is the only way to make assertions precise instead of approximate — especially critical on a healthcare platform, where production data is real people’s information.
+•	Give every test document a traceable ID. It’s what makes cleanup safe and exact-match assertions possible.
+•	Keep test cases as data, not code. Storing search scenarios as structured CSV/JSON files rather than hardcoded strings makes the test suite easy for anyone to extend, not just whoever wrote the original framework.
+•	Always clean up after yourself. A search test suite that leaves synthetic data behind will eventually pollute real search results or cause the next test run to behave unpredictably.
