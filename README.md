@@ -4,6 +4,8 @@ https://doi.org/10.5281/zenodo.20360057
 
 https://doi.org/10.5281/zenodo.21785690
 
+https://doi.org/10.5281/zenodo.21943807
+
 
 Author: Tatsiana Chakhovich — QA Automation Engineer
 
@@ -19,11 +21,13 @@ Git Workflows for QA Teams — branching strategies, isolating test changes, and
 
 Linux Fundamentals for QA — command-line navigation, permissions, log analysis, and shell scripting for test and CI environments (./linux-for-qa.md)
 
+Search Validation (OpenSearch) — testing and validating search relevance and indexing behavior. (./open-search.md)
+
 Test Automation Frameworks — structuring maintainable, scalable automation suites
 
 API & UI Testing — practical approaches to validating both service-level and user-facing behavior
 
-Search Validation (OpenSearch) — testing and validating search relevance and indexing behavior
+
 
 
 📖 Citation
@@ -33,6 +37,9 @@ If you use this work, please cite:
 Chakhovich, T. (2026). Git-Driven Workflow Practices for QA Automation Engineers in CI/CD Systems (Version 1.0). Zenodo. https://doi.org/10.5281/zenodo.20360057
 
 Chakhovich, T. (2026). Linux for QA Engineers: A Beginner-Friendly Guide to the Command Line (Version 1.1). Zenodo. https://doi.org/10.5281/zenodo.21785690
+
+Chakhovich, T. (2026). Testing Name Search with OpenSearch: QA Approach (Version 1.2). Zenodo. https://doi.org/10.5281/zenodo.21943807
+
 
 
 👤 About the Author
